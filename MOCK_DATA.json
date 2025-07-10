@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Wireless Headphones",
+    "price": 99.99,
+    "quantity": 15
+  },
+  {
+    "id": 2,
+    "name": "Bluetooth Speaker",
+    "price": 59.95,
+    "quantity": 8
+  },
+  {
+    "id": 3,
+    "name": "Smart Watch",
+    "price": 199.99,
+    "quantity": 5
+  },
+  {
+    "id": 4,
+    "name": "USB-C Cable",
+    "price": 12.50,
+    "quantity": 42
+  },
+  {
+    "id": 5,
+    "name": "Power Bank",
+    "price": 29.99,
+    "quantity": 11
+  }
+]
