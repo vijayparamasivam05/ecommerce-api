@@ -5,7 +5,9 @@ from rest_framework.urlpatterns import format_suffix_patterns
 urlpatterns = [
     path("items/", views.ItemList.as_view(), name="item-list"),
     path("add-to-cart/", views.add_to_cart, name="add-to-cart"),
+    path("cart/<str:user_id>/", views.view_cart, name="view-cart"),
     path("purchase/", views.purchase_cart, name="purchase-cart"),
+    path("remove-from-cart/", views.remove_from_cart, name="remove-from-cart"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
