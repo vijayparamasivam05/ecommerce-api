@@ -40,7 +40,12 @@ def add_to_cart(request):
         )
 
         cart_item, created = CartItem.objects.get_or_create(
-            cart=cart, item=item, defaults={"quantity": quantity}
+            cart=cart,
+            item=item,
+            defaults={
+                "quantity": quantity,
+                "price_at_addition": item.price,
+            },
         )
 
         if not created:
@@ -52,6 +57,7 @@ def add_to_cart(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             cart_item.quantity += quantity
+            cart_item.price_at_addition = item.price
             cart_item.save()
 
         return Response(
@@ -59,6 +65,7 @@ def add_to_cart(request):
                 "success": "Item added to cart",
                 "remaining_stock": item.quantity,
                 "cart_quantity": cart_item.quantity,
+                "price_at_addition": float(cart_item.price_at_addition),
             },
             status=status.HTTP_200_OK,
         )
@@ -85,14 +92,14 @@ def purchase_cart(request):
     user_id = request.data.get("user_id")
     idempotency_key = request.headers.get("Idempotency-Key")
 
-    # Check for duplicate request
     if idempotency_key:
         cache_key = f"purchase_{idempotency_key}"
         if cache.get(cache_key):
             return Response(
                 {"status": "already_processed"}, status=status.HTTP_208_ALREADY_REPORTED
             )
-        cache.set(cache_key, True, timeout=86400)  # Cache for 24 hours
+        cache.set(cache_key, True, timeout=86400)
+
     try:
         cart = Cart.objects.get(user_id=user_id, is_active=True)
     except Cart.DoesNotExist:
@@ -100,17 +107,79 @@ def purchase_cart(request):
             {"error": "No active cart found"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # Check all items have sufficient stock
+    changes = []
     for cart_item in cart.items.all():
-        if cart_item.item.quantity < cart_item.quantity:
-            return Response(
+        item = cart_item.item
+        if item.price != cart_item.price_at_addition:
+            changes.append(
                 {
-                    "error": f"Not enough stock for {cart_item.item.name}. Only {cart_item.item.quantity} available"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+                    "item_id": item.id,
+                    "item_name": item.name,
+                    "old_price": float(cart_item.price_at_addition),
+                    "new_price": float(item.price),
+                    "type": "price_change",
+                }
+            )
+        if item.quantity < cart_item.quantity:
+            changes.append(
+                {
+                    "item_id": item.id,
+                    "item_name": item.name,
+                    "requested_quantity": cart_item.quantity,
+                    "available_quantity": item.quantity,
+                    "type": "stock_change",
+                }
             )
 
-    # Process purchase
+    if changes:
+        return Response(
+            {
+                "error": "Cart items have changed",
+                "changes": changes,
+                "requires_confirmation": True,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    for cart_item in cart.items.all():
+        item = cart_item.item
+        item.quantity -= cart_item.quantity
+        item.save()
+
+        PurchaseLog.objects.create(
+            user_id=user_id,
+            item=item,
+            quantity=cart_item.quantity,
+            purchase_price=cart_item.price_at_addition,
+        )
+
+    cart.is_active = False
+    cart.save()
+
+    return Response({"success": "Purchase completed"}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@transaction.atomic
+def confirm_purchase_with_changes(request):
+    user_id = request.data.get("user_id")
+
+    try:
+        cart = Cart.objects.get(user_id=user_id, is_active=True)
+    except Cart.DoesNotExist:
+        return Response(
+            {"error": "No active cart found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    for cart_item in cart.items.all():
+        item = cart_item.item
+        if item.quantity < cart_item.quantity:
+            if item.quantity > 0:
+                cart_item.quantity = item.quantity
+                cart_item.save()
+            else:
+                cart_item.delete()
+
     for cart_item in cart.items.all():
         item = cart_item.item
         item.quantity -= cart_item.quantity
@@ -126,7 +195,13 @@ def purchase_cart(request):
     cart.is_active = False
     cart.save()
 
-    return Response({"success": "Purchase completed"}, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "success": "Purchase completed with updated items",
+            "message": "Some items were updated based on current availability",
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["DELETE"])

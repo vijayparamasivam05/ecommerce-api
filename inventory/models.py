@@ -24,6 +24,7 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name="items", on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
+    price_at_addition = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in cart {self.cart.id}"
