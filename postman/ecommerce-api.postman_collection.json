@@ -1,0 +1,129 @@
+{
+	"info": {
+		"_postman_id": "e511e421-8356-4ba4-8e62-43856bd422ce",
+		"name": "ecommerce-api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "37051648"
+	},
+	"item": [
+		{
+			"name": "List Items",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/api/items/"
+			},
+			"response": []
+		},
+		{
+			"name": "List Cart Items",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/api/cart/user123/"
+			},
+			"response": []
+		},
+		{
+			"name": "Add to Cart",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": \"user123\",\n    \"item_id\": 3,\n    \"quantity\": 3\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/add-to-cart/"
+			},
+			"response": []
+		},
+		{
+			"name": "Regular Purchase",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Idempotency-Key",
+						"value": "unique-key-a-123",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": \"user123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/purchase/"
+			},
+			"response": []
+		},
+		{
+			"name": "Confirm Purchase",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": \"user124\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/confirm-purchase/"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Cart Item",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": \"user124\", \n    \"item_id\": 3\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/remove-from-cart/"
+			},
+			"response": []
+		}
+	]
+}
