@@ -12,7 +12,7 @@ class Item(models.Model):
 
 
 class Cart(models.Model):
-    user_id = models.CharField(max_length=255)  # Simplified user identification
+    user_id = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 

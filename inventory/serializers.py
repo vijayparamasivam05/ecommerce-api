@@ -8,22 +8,6 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "price", "quantity"]
 
 
-class CartItemSerializer(serializers.ModelSerializer):
-    item = ItemSerializer()
-
-    class Meta:
-        model = CartItem
-        fields = ["id", "item", "quantity"]
-
-
-class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True, source="items.all")
-
-    class Meta:
-        model = Cart
-        fields = ["id", "user_id", "is_active", "items"]
-
-
 class CartItemDetailSerializer(serializers.ModelSerializer):
     item = ItemSerializer()
     is_out_of_stock = serializers.SerializerMethodField()

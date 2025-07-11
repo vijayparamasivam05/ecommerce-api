@@ -8,15 +8,15 @@ from rest_framework.decorators import api_view
 from .models import Item, Cart, CartItem, PurchaseLog
 from .serializers import (
     ItemSerializer,
-    CartSerializer,
-    CartItemSerializer,
     CartDetailSerializer,
 )
 
 
-class ItemList(generics.ListAPIView):
-    queryset = Item.objects.filter(quantity__gt=0)
-    serializer_class = ItemSerializer
+@api_view(["GET"])
+def item_list(request):
+    items = Item.objects.filter(quantity__gt=0).order_by("id")
+    serializer = ItemSerializer(items, many=True)
+    return Response(serializer.data)
 
 
 @api_view(["POST"])
@@ -27,7 +27,6 @@ def add_to_cart(request):
     quantity = int(request.data.get("quantity", 1))
 
     try:
-        # Lock the item row for update to prevent race conditions
         item = Item.objects.select_for_update().get(id=item_id)
 
         if item.quantity < quantity:
@@ -36,18 +35,15 @@ def add_to_cart(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Get or create active cart
         cart, _ = Cart.objects.get_or_create(
             user_id=user_id, is_active=True, defaults={"user_id": user_id}
         )
 
-        # Update or create cart item
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart, item=item, defaults={"quantity": quantity}
         )
 
         if not created:
-            # Check if adding more would exceed stock
             if (cart_item.quantity + quantity) > item.quantity:
                 return Response(
                     {
